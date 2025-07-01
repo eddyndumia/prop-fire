@@ -21,21 +21,42 @@ class SplashScreen:
     def setup_splash(self):
         """Configure splash screen"""
         self.splash.title("Prop Fire")
-        self.splash.geometry("400x300+" + str(self.splash.winfo_screenwidth()//2 - 200) + "+" + str(self.splash.winfo_screenheight()//2 - 150))
-        self.splash.overrideredirect(True)  # Remove window decorations
+        
+        # Get screen dimensions for perfect centering
+        screen_width = self.splash.winfo_screenwidth()
+        screen_height = self.splash.winfo_screenheight()
+        window_width = 450
+        window_height = 320
+        
+        # Calculate center position
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        
+        self.splash.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        self.splash.overrideredirect(True)
         self.splash.attributes('-topmost', True)
         
-        # Main title
-        title_label = ctk.CTkLabel(self.splash, text="🔥 PROP FIRE", 
-                                  font=('Inter', 32, 'bold'), 
+        # Main container with padding
+        main_frame = ctk.CTkFrame(self.splash, fg_color="transparent")
+        main_frame.pack(fill='both', expand=True, padx=30, pady=30)
+        
+        # Title with better spacing
+        title_label = ctk.CTkLabel(main_frame, text="🔥 PROP FIRE", 
+                                  font=('Inter', 36, 'bold'), 
                                   text_color='#ff6b35')
         title_label.pack(expand=True)
         
+        # Subtitle
+        subtitle_label = ctk.CTkLabel(main_frame, text="Professional Trading Timer", 
+                                     font=('Inter', 14), 
+                                     text_color='#cccccc')
+        subtitle_label.pack(pady=(0, 20))
+        
         # Made by text
-        made_by_label = ctk.CTkLabel(self.splash, text="Made by traderndumia", 
+        made_by_label = ctk.CTkLabel(main_frame, text="Made by traderndumia", 
                                     font=('Inter', 12), 
                                     text_color='#888888')
-        made_by_label.pack(side='bottom', pady=20)
+        made_by_label.pack(side='bottom')
         
         # Auto-close after 3 seconds
         self.splash.after(3000, self.close_splash)
@@ -62,80 +83,103 @@ class ConfigWindow:
     def setup_config_window(self):
         """Configure config window properties"""
         self.config_window.title("Prop Fire - Configuration")
-        self.config_window.geometry("450x400+" + str(self.config_window.winfo_screenwidth()//2 - 225) + "+" + str(self.config_window.winfo_screenheight()//2 - 200))
+        
+        # Get screen dimensions for centering
+        screen_width = self.config_window.winfo_screenwidth()
+        screen_height = self.config_window.winfo_screenheight()
+        window_width = 480
+        window_height = 520
+        
+        # Calculate center position
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        
+        self.config_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
         self.config_window.resizable(False, False)
+        self.config_window.overrideredirect(True)  # Borderless
+        self.config_window.attributes('-topmost', True)
         
     def create_config_widgets(self):
         """Create configuration interface"""
-        # Header with exit button
-        header_frame = ctk.CTkFrame(self.config_window)
-        header_frame.pack(fill='x', padx=20, pady=15)
+        # Main container with border effect
+        main_container = ctk.CTkFrame(self.config_window, corner_radius=12)
+        main_container.pack(fill='both', expand=True, padx=8, pady=8)
         
-        title_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        title_frame.pack(fill='x', padx=15, pady=10)
+        # Header with title and exit button
+        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
+        header_frame.pack(fill='x', padx=25, pady=(20, 15))
         
-        title_label = ctk.CTkLabel(title_frame, text="🔥 PROP FIRE", 
-                                  font=('Inter', 18, 'bold'), 
+        title_label = ctk.CTkLabel(header_frame, text="🔥 PROP FIRE", 
+                                  font=('Inter', 20, 'bold'), 
                                   text_color='#ff6b35')
         title_label.pack(side='left')
         
-        exit_button = ctk.CTkButton(title_frame, text="❌", 
-                                   font=('Inter', 12), 
-                                   width=40, height=30,
+        exit_button = ctk.CTkButton(header_frame, text="❌", 
+                                   font=('Inter', 14), 
+                                   width=36, height=36,
+                                   corner_radius=18,
                                    command=self.exit_app)
         exit_button.pack(side='right')
         
-        subtitle_label = ctk.CTkLabel(header_frame, text="Configuration", 
-                                     font=('Inter', 12), 
-                                     text_color='#888888')
-        subtitle_label.pack(pady=(0,10))
+        # Subtitle
+        subtitle_label = ctk.CTkLabel(main_container, text="Trading Configuration", 
+                                     font=('Inter', 14), 
+                                     text_color='#aaaaaa')
+        subtitle_label.pack(pady=(0, 25))
         
-        # Settings Frame
-        settings_frame = ctk.CTkFrame(self.config_window)
-        settings_frame.pack(fill='x', padx=20, pady=15)
+        # Settings container with proper grid layout
+        settings_container = ctk.CTkFrame(main_container)
+        settings_container.pack(fill='x', padx=25, pady=(0, 25))
+        
+        # Configure grid weights for responsive layout
+        settings_container.grid_columnconfigure(1, weight=1)
         
         # Currency selection
-        ctk.CTkLabel(settings_frame, text="Currency:", font=('Inter', 12)).grid(row=0, column=0, sticky='w', padx=15, pady=12)
-        self.currency_combo = ctk.CTkComboBox(settings_frame, 
+        ctk.CTkLabel(settings_container, text="Currency:", 
+                    font=('Inter', 13, 'bold')).grid(row=0, column=0, sticky='w', padx=20, pady=15)
+        self.currency_combo = ctk.CTkComboBox(settings_container, 
                                              values=["USD", "EUR", "GBP", "JPY", "AUD", "CAD"],
-                                             font=('Inter', 12), width=180)
+                                             font=('Inter', 13), width=200, height=35)
         self.currency_combo.set(self.settings["currency"])
-        self.currency_combo.grid(row=0, column=1, padx=15, pady=12)
+        self.currency_combo.grid(row=0, column=1, sticky='ew', padx=(10, 20), pady=15)
         
         # Prop firm selection
-        ctk.CTkLabel(settings_frame, text="Prop Firm:", font=('Inter', 12)).grid(row=1, column=0, sticky='w', padx=15, pady=12)
-        self.firm_combo = ctk.CTkComboBox(settings_frame, 
+        ctk.CTkLabel(settings_container, text="Prop Firm:", 
+                    font=('Inter', 13, 'bold')).grid(row=1, column=0, sticky='w', padx=20, pady=15)
+        self.firm_combo = ctk.CTkComboBox(settings_container, 
                                          values=list(self.prop_firms.keys()),
-                                         font=('Inter', 12), width=180)
+                                         font=('Inter', 13), width=200, height=35)
         self.firm_combo.set(self.settings["prop_firm"])
-        self.firm_combo.grid(row=1, column=1, padx=15, pady=12)
+        self.firm_combo.grid(row=1, column=1, sticky='ew', padx=(10, 20), pady=15)
         
         # Day selection
-        ctk.CTkLabel(settings_frame, text="Day:", font=('Inter', 12)).grid(row=2, column=0, sticky='w', padx=15, pady=12)
-        self.day_combo = ctk.CTkComboBox(settings_frame, 
+        ctk.CTkLabel(settings_container, text="Trading Day:", 
+                    font=('Inter', 13, 'bold')).grid(row=2, column=0, sticky='w', padx=20, pady=15)
+        self.day_combo = ctk.CTkComboBox(settings_container, 
                                         values=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-                                        font=('Inter', 12), width=180)
+                                        font=('Inter', 13), width=200, height=35)
         self.day_combo.set(self.settings["day"])
-        self.day_combo.grid(row=2, column=1, padx=15, pady=12)
+        self.day_combo.grid(row=2, column=1, sticky='ew', padx=(10, 20), pady=15)
         
         # Session selection
-        ctk.CTkLabel(settings_frame, text="Session:", font=('Inter', 12)).grid(row=3, column=0, sticky='w', padx=15, pady=12)
-        self.session_combo = ctk.CTkComboBox(settings_frame, 
+        ctk.CTkLabel(settings_container, text="Session:", 
+                    font=('Inter', 13, 'bold')).grid(row=3, column=0, sticky='w', padx=20, pady=15)
+        self.session_combo = ctk.CTkComboBox(settings_container, 
                                             values=list(self.sessions.keys()),
-                                            font=('Inter', 12), width=180)
+                                            font=('Inter', 13), width=200, height=35)
         self.session_combo.set(self.settings["session"])
-        self.session_combo.grid(row=3, column=1, padx=15, pady=12)
+        self.session_combo.grid(row=3, column=1, sticky='ew', padx=(10, 20), pady=15)
         
-        # Button frame
-        button_frame = ctk.CTkFrame(self.config_window, fg_color="transparent")
-        button_frame.pack(fill='x', padx=20, pady=20)
+        # Button container - ensures button is always visible
+        button_container = ctk.CTkFrame(main_container, fg_color="transparent")
+        button_container.pack(fill='x', padx=25, pady=(10, 25))
         
-        start_button = ctk.CTkButton(button_frame, text="Start Trading Timer", 
-                                    font=('Inter', 14, 'bold'),
+        start_button = ctk.CTkButton(button_container, text="Start Trading Timer", 
+                                    font=('Inter', 15, 'bold'),
                                     fg_color='#ff6b35', hover_color='#e55a2b',
-                                    height=40, width=200,
+                                    height=45, width=250, corner_radius=8,
                                     command=self.start_main_app)
-        start_button.pack()
+        start_button.pack(pady=10)
         
     def exit_app(self):
         """Exit the application"""
@@ -177,89 +221,101 @@ class MainCountdownWindow:
     def setup_main_window(self):
         """Configure borderless main window"""
         self.main_window.title("Prop Fire Timer")
-        self.main_window.geometry("350x450+50+50")  # Top-left position
+        
+        # Improved sizing and positioning
+        window_width = 380
+        window_height = 520
+        self.main_window.geometry(f"{window_width}x{window_height}+50+50")
         self.main_window.resizable(False, False)
         self.main_window.attributes('-topmost', True)
-        self.main_window.overrideredirect(True)  # Borderless
+        self.main_window.overrideredirect(True)
         
     def create_main_widgets(self):
         """Create main countdown interface"""
-        # Header with settings and exit buttons
-        header_frame = ctk.CTkFrame(self.main_window, fg_color="transparent")
-        header_frame.pack(fill='x', padx=15, pady=10)
+        # Main container with border effect
+        main_container = ctk.CTkFrame(self.main_window, corner_radius=12)
+        main_container.pack(fill='both', expand=True, padx=8, pady=8)
+        
+        # Header with title and control buttons
+        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
+        header_frame.pack(fill='x', padx=20, pady=(15, 10))
         
         title_label = ctk.CTkLabel(header_frame, text="🔥 PROP FIRE", 
-                                  font=('Inter', 16, 'bold'), 
+                                  font=('Inter', 18, 'bold'), 
                                   text_color='#ff6b35')
         title_label.pack(side='left')
         
-        button_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        button_frame.pack(side='right')
+        # Control buttons container
+        controls_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        controls_frame.pack(side='right')
         
-        exit_button = ctk.CTkButton(button_frame, text="❌", 
-                                   font=('Inter', 12), 
-                                   width=35, height=30,
+        exit_button = ctk.CTkButton(controls_frame, text="❌", 
+                                   font=('Inter', 14), 
+                                   width=36, height=36, corner_radius=18,
                                    command=self.exit_app)
-        exit_button.pack(side='right', padx=(0,5))
+        exit_button.pack(side='right', padx=(5, 0))
         
-        settings_button = ctk.CTkButton(button_frame, text="⚙️", 
-                                       font=('Inter', 12), 
-                                       width=35, height=30,
+        settings_button = ctk.CTkButton(controls_frame, text="⚙️", 
+                                       font=('Inter', 14), 
+                                       width=36, height=36, corner_radius=18,
                                        command=self.open_settings)
         settings_button.pack(side='right')
         
-        # Timer display
-        timer_frame = ctk.CTkFrame(self.main_window)
-        timer_frame.pack(fill='x', padx=15, pady=10)
+        # Timer display with enhanced styling
+        timer_container = ctk.CTkFrame(main_container, corner_radius=10)
+        timer_container.pack(fill='x', padx=20, pady=15)
         
-        self.timer_label = ctk.CTkLabel(timer_frame, text="00:00:00", 
-                                       font=('Inter', 28, 'bold'), 
+        self.timer_label = ctk.CTkLabel(timer_container, text="00:00:00", 
+                                       font=('Inter', 32, 'bold'), 
                                        text_color='#00ff00')
-        self.timer_label.pack(pady=15)
+        self.timer_label.pack(pady=20)
         
-        # Status
-        self.status_label = ctk.CTkLabel(self.main_window, text="Calculating...", 
-                                        font=('Inter', 12, 'bold'), 
+        # Status with better spacing
+        self.status_label = ctk.CTkLabel(main_container, text="Calculating...", 
+                                        font=('Inter', 13, 'bold'), 
                                         text_color='#ffaa00',
-                                        wraplength=300)
-        self.status_label.pack(pady=5)
+                                        wraplength=340)
+        self.status_label.pack(pady=(5, 15))
         
-        # Current settings info
-        info_frame = ctk.CTkFrame(self.main_window)
-        info_frame.pack(fill='x', padx=15, pady=10)
+        # Settings info panel
+        info_container = ctk.CTkFrame(main_container, corner_radius=8)
+        info_container.pack(fill='x', padx=20, pady=(0, 15))
         
         info_text = f"{self.settings['currency']} | {self.settings['prop_firm']} | {self.settings['day']} | {self.settings['session']}"
-        info_label = ctk.CTkLabel(info_frame, text=info_text, 
-                                 font=('Inter', 12))
-        info_label.pack(pady=8)
+        info_label = ctk.CTkLabel(info_container, text=info_text, 
+                                 font=('Inter', 13, 'bold'))
+        info_label.pack(pady=(12, 8))
         
         # Prop firm rules
         rules = self.prop_firms[self.settings['prop_firm']]
         rules_text = f"Rules: {rules['before']}min before | {rules['after']}min after"
-        rules_label = ctk.CTkLabel(info_frame, text=rules_text, 
-                                  font=('Inter', 10), 
-                                  text_color='#888888')
-        rules_label.pack()
+        rules_label = ctk.CTkLabel(info_container, text=rules_text, 
+                                  font=('Inter', 11), 
+                                  text_color='#aaaaaa')
+        rules_label.pack(pady=(0, 12))
         
-        # News event info
-        self.news_label = ctk.CTkLabel(self.main_window, text="No upcoming news", 
+        # News event info with better styling
+        news_container = ctk.CTkFrame(main_container, corner_radius=8)
+        news_container.pack(fill='x', padx=20, pady=(0, 15))
+        
+        self.news_label = ctk.CTkLabel(news_container, text="No upcoming news", 
                                       font=('Inter', 12), 
-                                      wraplength=300)
-        self.news_label.pack(pady=10)
+                                      wraplength=340)
+        self.news_label.pack(pady=15)
         
         # Motivational quote
-        motivation_label = ctk.CTkLabel(self.main_window, 
+        motivation_label = ctk.CTkLabel(main_container, 
                                        text="💪 Stay consistent — small wins compound.", 
-                                       font=('Inter', 10), 
-                                       text_color='#888888',
-                                       wraplength=300)
-        motivation_label.pack(pady=5)
+                                       font=('Inter', 11, 'italic'), 
+                                       text_color='#999999',
+                                       wraplength=340)
+        motivation_label.pack(pady=(5, 15))
         
         # Footer
-        footer_label = ctk.CTkLabel(self.main_window, text="Made by traderndumia", 
+        footer_label = ctk.CTkLabel(main_container, text="Made by traderndumia", 
                                    font=('Inter', 10), 
-                                   text_color='#666666')
-        footer_label.pack(side='bottom', pady=5)
+                                   text_color='#777777')
+        footer_label.pack(side='bottom', pady=(0, 15))
         
     def exit_app(self):
         """Exit the application"""

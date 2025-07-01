@@ -1,82 +1,96 @@
 import requests
 import datetime
-from typing import Dict, List, Optional
+import xml.etree.ElementTree as ET
+from typing import Dict, Optional
 
 class NewsAPI:
     def __init__(self):
-        self.api_key = "A387iziwZA/GzOzAmY7sPw==JeQiCm920WelbRP7"
-        self.base_url = "https://api.api-ninjas.com/v1/economiccalendar"
-        self.headers = {"X-Api-Key": self.api_key}
+        self.xml_url = "https://nfs.faireconomy.media/ff_calendar_thisweek.xml"
         
     def fetch_high_impact_news(self, currency_code: str, target_day: str) -> Optional[Dict]:
-        """Fetch high-impact news for specific currency and day"""
+        """Fetch high-impact news from Forex Factory XML feed"""
         try:
-            # Map currency codes to country codes for API
-            currency_map = {
-                "USD": "US", "EUR": "EU", "GBP": "GB", 
-                "JPY": "JP", "AUD": "AU", "CAD": "CA"
-            }
+            # Download XML feed
+            response = requests.get(self.xml_url, timeout=10)
+            response.raise_for_status()
             
-            country = currency_map.get(currency_code, "US")
+            # Parse XML
+            root = ET.fromstring(response.content)
             
-            # Construct URL with parameters
-            url = f"{self.base_url}?importance=high&country={country}"
+            # Convert day name to weekday number
+            day_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, "Friday": 4}
+            target_weekday = day_map.get(target_day)
             
-            response = requests.get(url, headers=self.headers, timeout=10)
-            
-            if response.status_code == 200:
-                events = response.json()
-                return self._filter_events_by_day(events, target_day)
-            else:
-                error_msg = f"API Error: {response.status_code} - {response.text}"
-                print(error_msg)
-                raise Exception(error_msg)
+            if target_weekday is None:
+                return None
                 
+            now = datetime.datetime.now()
+            relevant_events = []
+            
+            # Parse each event
+            for event in root.findall('.//event'):
+                try:
+                    # Extract event data
+                    title = event.find('title')
+                    country = event.find('country')
+                    impact = event.find('impact')
+                    date = event.find('date')
+                    forecast = event.find('forecast')
+                    previous = event.find('previous')
+                    
+                    # Skip if required fields are missing
+                    if None in [title, country, impact, date]:
+                        continue
+                        
+                    title_text = title.text or ""
+                    country_text = country.text or ""
+                    impact_text = impact.text or ""
+                    date_text = date.text or ""
+                    forecast_text = forecast.text if forecast is not None else ""
+                    previous_text = previous.text if previous is not None else ""
+                    
+                    # Filter by currency, impact, and future date
+                    if (country_text == currency_code and 
+                        impact_text == "High" and 
+                        date_text):
+                        
+                        # Parse date (format: "dd-mm-yyyy HH:MM:SS")
+                        event_datetime = datetime.datetime.strptime(date_text, "%d-%m-%Y %H:%M:%S")
+                        
+                        # Check if event is in future and on target day
+                        if (event_datetime > now and 
+                            event_datetime.weekday() == target_weekday):
+                            
+                            relevant_events.append({
+                                "title": title_text,
+                                "date": event_datetime,
+                                "datetime": event_datetime,
+                                "event_name": title_text,
+                                "time": event_datetime.strftime("%H:%M"),
+                                "impact": impact_text,
+                                "country": country_text,
+                                "forecast": forecast_text,
+                                "previous": previous_text
+                            })
+                            
+                except (ValueError, AttributeError) as e:
+                    continue
+                    
+            # Return earliest relevant event
+            if relevant_events:
+                return min(relevant_events, key=lambda x: x["datetime"])
+                
+            return None
+            
         except requests.exceptions.RequestException as e:
             error_msg = f"Network error: {str(e)}"
             print(error_msg)
             raise Exception(error_msg)
+        except ET.ParseError as e:
+            error_msg = f"XML parsing error: {str(e)}"
+            print(error_msg)
+            raise Exception(error_msg)
         except Exception as e:
-            print(f"API error: {str(e)}")
-            raise e
-            
-    def _filter_events_by_day(self, events: List[Dict], target_day: str) -> Optional[Dict]:
-        """Filter events by target day and return next relevant event"""
-        if not events:
-            return None
-            
-        # Convert day name to weekday number
-        day_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, "Friday": 4}
-        target_weekday = day_map.get(target_day)
-        
-        if target_weekday is None:
-            return None
-            
-        now = datetime.datetime.now()
-        relevant_events = []
-        
-        for event in events:
-            try:
-                # Parse event datetime
-                event_time = datetime.datetime.strptime(event.get("time", ""), "%Y-%m-%d %H:%M:%S")
-                
-                # Check if event is on target day and in future
-                if event_time.weekday() == target_weekday and event_time > now:
-                    relevant_events.append({
-                        "event_name": event.get("event", "Unknown Event"),
-                        "time": event_time.strftime("%H:%M"),
-                        "datetime": event_time,
-                        "impact": event.get("importance", "high"),
-                        "country": event.get("country", ""),
-                        "actual": event.get("actual", ""),
-                        "forecast": event.get("forecast", ""),
-                        "previous": event.get("previous", "")
-                    })
-            except (ValueError, TypeError):
-                continue
-                
-        # Return earliest relevant event
-        if relevant_events:
-            return min(relevant_events, key=lambda x: x["datetime"])
-        
-        return None
+            error_msg = f"Unexpected error: {str(e)}"
+            print(error_msg)
+            raise Exception(error_msg)
