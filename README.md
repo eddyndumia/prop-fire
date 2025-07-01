@@ -107,10 +107,19 @@ self.sessions = {
 
 ## Data Sources
 
-Currently uses **mock data** for demonstration. In a production environment, you would:
-- Connect to a real economic calendar API (e.g., ForexFactory, Investing.com)
-- Implement real-time data fetching
-- Add error handling for API failures
+### Live Economic Calendar API
+Prop Fire now integrates with **API Ninjas Economic Calendar** for real-time high-impact news:
+- **Endpoint**: `https://api.api-ninjas.com/v1/economiccalendar`
+- **Filters**: High-impact events for selected currency and trading day
+- **Fallback**: Graceful degradation when API is unavailable
+- **Error Handling**: Network issues, rate limits, and invalid responses
+
+### API Features
+- ✅ **Live Data**: Real economic events from API Ninjas
+- ✅ **Currency Filtering**: USD, EUR, GBP, JPY, AUD, CAD
+- ✅ **Impact Level**: High-impact events only
+- ✅ **Session Filtering**: Events within selected trading sessions
+- ✅ **Error Recovery**: Falls back to session-based timing when API fails
 
 ## Troubleshooting
 

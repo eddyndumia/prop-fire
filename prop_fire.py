@@ -6,6 +6,7 @@ import os
 from typing import Dict, List, Optional, Tuple
 import threading
 import time
+from news_api import NewsAPI
 
 class SplashScreen:
     def __init__(self, callback):
@@ -150,9 +151,13 @@ class MainCountdownWindow:
         self.sessions = sessions
         self.mock_news = mock_news
         self.config_callback = config_callback
+        self.news_api = NewsAPI()
+        self.current_news_event = None
+        self.api_error_message = None
         self.main_window = tk.Tk()
         self.setup_main_window()
         self.create_main_widgets()
+        self.fetch_live_news()
         self.update_timer()
         
     def setup_main_window(self):
@@ -249,41 +254,32 @@ class MainCountdownWindow:
         self.main_window.destroy()
         self.config_callback()
         
-    def get_next_news_event(self) -> Optional[Dict]:
-        """Find the next relevant news event"""
-        now = datetime.datetime.now()
-        target_day = self.settings["day"]
-        target_currency = self.settings["currency"]
-        
-        # Convert day name to weekday number
-        day_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, "Friday": 4}
-        target_weekday = day_map[target_day]
-        
-        # Find next occurrence of target day
-        days_ahead = target_weekday - now.weekday()
-        if days_ahead <= 0:
-            days_ahead += 7
-        target_date = now + datetime.timedelta(days=days_ahead)
-        
-        # Find news events for that day and currency
-        relevant_events = []
-        for event in self.mock_news:
-            event_date = datetime.datetime.strptime(event["date"], "%Y-%m-%d")
-            if (event_date.date() == target_date.date() and 
-                event["currency"] == target_currency and
-                event["impact"] == "high"):
+    def fetch_live_news(self):
+        """Fetch live news data from API in background thread"""
+        def fetch_news():
+            try:
+                self.current_news_event = self.news_api.fetch_high_impact_news(
+                    self.settings["currency"], 
+                    self.settings["day"]
+                )
+                self.api_error_message = None
+            except Exception as e:
+                self.api_error_message = f"API Error: {str(e)}"
+                self.current_news_event = None
                 
-                event_time = datetime.datetime.strptime(f"{event['date']} {event['time']}", "%Y-%m-%d %H:%M")
-                if self.is_in_session(event_time):
-                    relevant_events.append({
-                        "datetime": event_time,
-                        "name": event["name"],
-                        "currency": event["currency"]
-                    })
+        # Run in background thread to avoid blocking UI
+        thread = threading.Thread(target=fetch_news, daemon=True)
+        thread.start()
         
-        # Return the earliest event
-        if relevant_events:
-            return min(relevant_events, key=lambda x: x["datetime"])
+    def get_next_news_event(self) -> Optional[Dict]:
+        """Find the next relevant news event from live API data"""
+        # Return live news event if available and within session
+        if self.current_news_event and self.is_in_session_time(self.current_news_event["time"]):
+            return {
+                "datetime": self.current_news_event["datetime"],
+                "name": self.current_news_event["event_name"],
+                "currency": self.settings["currency"]
+            }
         return None
         
     def is_in_session(self, event_time: datetime.datetime) -> bool:
@@ -293,6 +289,17 @@ class MainCountdownWindow:
         end_time = datetime.datetime.strptime(session["end"], "%H:%M").time()
         
         return start_time <= event_time.time() <= end_time
+        
+    def is_in_session_time(self, time_str: str) -> bool:
+        """Check if time string falls within selected session"""
+        try:
+            event_time = datetime.datetime.strptime(time_str, "%H:%M").time()
+            session = self.sessions[self.settings["session"]]
+            start_time = datetime.datetime.strptime(session["start"], "%H:%M").time()
+            end_time = datetime.datetime.strptime(session["end"], "%H:%M").time()
+            return start_time <= event_time <= end_time
+        except:
+            return False
         
     def calculate_next_trade_time(self) -> Tuple[datetime.datetime, str]:
         """Calculate when next trade opportunity is available"""
@@ -366,13 +373,18 @@ class MainCountdownWindow:
                 self.timer_label.config(text="TRADE NOW", fg='#00ff00')
                 self.status_label.config(text="Session Active - No Restrictions")
                 
-            # Update news information
-            next_event = self.get_next_news_event()
-            if next_event:
-                news_text = f"📰 {next_event['name']}\n{next_event['datetime'].strftime('%Y-%m-%d %H:%M UTC')}"
-                self.news_label.config(text=news_text)
+            # Update news information with API error handling
+            if self.api_error_message:
+                self.news_label.config(text=f"⚠️ {self.api_error_message}\nUsing fallback mode", fg='#ffaa00')
             else:
-                self.news_label.config(text="📰 No high-impact news scheduled")
+                next_event = self.get_next_news_event()
+                if next_event:
+                    news_text = f"📰 {next_event['name']}\n{next_event['datetime'].strftime('%Y-%m-%d %H:%M UTC')}"
+                    self.news_label.config(text=news_text, fg='#ffffff')
+                elif self.current_news_event is None:
+                    self.news_label.config(text="📰 No major news — preparing for session open", fg='#888888')
+                else:
+                    self.news_label.config(text="📰 No high-impact news in session", fg='#888888')
                 
         except Exception as e:
             self.timer_label.config(text="ERROR", fg='#ff4444')
@@ -389,6 +401,7 @@ class PropFireApp:
     def __init__(self):
         self.load_settings()
         self.setup_data()
+        self.news_api = NewsAPI()
         self.show_splash()
         
     def show_splash(self):
