@@ -1,7 +1,6 @@
 # Prop Fire - Trading Timer Requirements
-# Core dependencies (tkinter is included with Python by default)
-
-# Required for live news API integration
+# Core dependencies
+customtkinter>=5.2.0
 requests>=2.28.0
 
 # Optional: For enhanced date handling

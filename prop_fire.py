@@ -1,5 +1,5 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
+import customtkinter as ctk
+from tkinter import messagebox
 import datetime
 import json
 import os
@@ -8,30 +8,33 @@ import threading
 import time
 from news_api import NewsAPI
 
+# Set customtkinter appearance
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
+
 class SplashScreen:
     def __init__(self, callback):
         self.callback = callback
-        self.splash = tk.Tk()
+        self.splash = ctk.CTk()
         self.setup_splash()
         
     def setup_splash(self):
         """Configure splash screen"""
         self.splash.title("Prop Fire")
         self.splash.geometry("400x300+" + str(self.splash.winfo_screenwidth()//2 - 200) + "+" + str(self.splash.winfo_screenheight()//2 - 150))
-        self.splash.configure(bg='#1a1a1a')
         self.splash.overrideredirect(True)  # Remove window decorations
         self.splash.attributes('-topmost', True)
         
         # Main title
-        title_label = tk.Label(self.splash, text="🔥 PROP FIRE", 
-                              font=('Arial', 32, 'bold'), 
-                              fg='#ff6b35', bg='#1a1a1a')
+        title_label = ctk.CTkLabel(self.splash, text="🔥 PROP FIRE", 
+                                  font=('Inter', 32, 'bold'), 
+                                  text_color='#ff6b35')
         title_label.pack(expand=True)
         
         # Made by text
-        made_by_label = tk.Label(self.splash, text="Made by traderndumia", 
-                                font=('Arial', 12), 
-                                fg='#888888', bg='#1a1a1a')
+        made_by_label = ctk.CTkLabel(self.splash, text="Made by traderndumia", 
+                                    font=('Inter', 12), 
+                                    text_color='#888888')
         made_by_label.pack(side='bottom', pady=20)
         
         # Auto-close after 3 seconds
@@ -52,89 +55,100 @@ class ConfigWindow:
         self.prop_firms = prop_firms
         self.sessions = sessions
         self.callback = callback
-        self.config_window = tk.Tk()
+        self.config_window = ctk.CTk()
         self.setup_config_window()
         self.create_config_widgets()
         
     def setup_config_window(self):
         """Configure config window properties"""
         self.config_window.title("Prop Fire - Configuration")
-        self.config_window.geometry("400x350+" + str(self.config_window.winfo_screenwidth()//2 - 200) + "+" + str(self.config_window.winfo_screenheight()//2 - 175))
+        self.config_window.geometry("450x400+" + str(self.config_window.winfo_screenwidth()//2 - 225) + "+" + str(self.config_window.winfo_screenheight()//2 - 200))
         self.config_window.resizable(False, False)
-        self.config_window.configure(bg='#1a1a1a')
         
     def create_config_widgets(self):
         """Create configuration interface"""
-        # Header
-        header_frame = tk.Frame(self.config_window, bg='#1a1a1a')
+        # Header with exit button
+        header_frame = ctk.CTkFrame(self.config_window)
         header_frame.pack(fill='x', padx=20, pady=15)
         
-        title_label = tk.Label(header_frame, text="🔥 PROP FIRE", 
-                              font=('Arial', 18, 'bold'), 
-                              fg='#ff6b35', bg='#1a1a1a')
-        title_label.pack()
+        title_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        title_frame.pack(fill='x', padx=15, pady=10)
         
-        subtitle_label = tk.Label(header_frame, text="Configuration", 
-                                 font=('Arial', 12), 
-                                 fg='#888888', bg='#1a1a1a')
-        subtitle_label.pack()
+        title_label = ctk.CTkLabel(title_frame, text="🔥 PROP FIRE", 
+                                  font=('Inter', 18, 'bold'), 
+                                  text_color='#ff6b35')
+        title_label.pack(side='left')
+        
+        exit_button = ctk.CTkButton(title_frame, text="❌", 
+                                   font=('Inter', 12), 
+                                   width=40, height=30,
+                                   command=self.exit_app)
+        exit_button.pack(side='right')
+        
+        subtitle_label = ctk.CTkLabel(header_frame, text="Configuration", 
+                                     font=('Inter', 12), 
+                                     text_color='#888888')
+        subtitle_label.pack(pady=(0,10))
         
         # Settings Frame
-        settings_frame = tk.LabelFrame(self.config_window, text="Trading Setup", 
-                                      font=('Arial', 10, 'bold'),
-                                      fg='#ffffff', bg='#2a2a2a', bd=1)
+        settings_frame = ctk.CTkFrame(self.config_window)
         settings_frame.pack(fill='x', padx=20, pady=15)
         
         # Currency selection
-        tk.Label(settings_frame, text="Currency:", fg='#ffffff', bg='#2a2a2a').grid(row=0, column=0, sticky='w', padx=10, pady=8)
-        self.currency_var = tk.StringVar(value=self.settings["currency"])
-        currency_combo = ttk.Combobox(settings_frame, textvariable=self.currency_var, 
-                                     values=["USD", "EUR", "GBP", "JPY", "AUD", "CAD"], 
-                                     state="readonly", width=18)
-        currency_combo.grid(row=0, column=1, padx=10, pady=8)
+        ctk.CTkLabel(settings_frame, text="Currency:", font=('Inter', 12)).grid(row=0, column=0, sticky='w', padx=15, pady=12)
+        self.currency_combo = ctk.CTkComboBox(settings_frame, 
+                                             values=["USD", "EUR", "GBP", "JPY", "AUD", "CAD"],
+                                             font=('Inter', 12), width=180)
+        self.currency_combo.set(self.settings["currency"])
+        self.currency_combo.grid(row=0, column=1, padx=15, pady=12)
         
         # Prop firm selection
-        tk.Label(settings_frame, text="Prop Firm:", fg='#ffffff', bg='#2a2a2a').grid(row=1, column=0, sticky='w', padx=10, pady=8)
-        self.firm_var = tk.StringVar(value=self.settings["prop_firm"])
-        firm_combo = ttk.Combobox(settings_frame, textvariable=self.firm_var, 
-                                 values=list(self.prop_firms.keys()), 
-                                 state="readonly", width=18)
-        firm_combo.grid(row=1, column=1, padx=10, pady=8)
+        ctk.CTkLabel(settings_frame, text="Prop Firm:", font=('Inter', 12)).grid(row=1, column=0, sticky='w', padx=15, pady=12)
+        self.firm_combo = ctk.CTkComboBox(settings_frame, 
+                                         values=list(self.prop_firms.keys()),
+                                         font=('Inter', 12), width=180)
+        self.firm_combo.set(self.settings["prop_firm"])
+        self.firm_combo.grid(row=1, column=1, padx=15, pady=12)
         
         # Day selection
-        tk.Label(settings_frame, text="Day:", fg='#ffffff', bg='#2a2a2a').grid(row=2, column=0, sticky='w', padx=10, pady=8)
-        self.day_var = tk.StringVar(value=self.settings["day"])
-        day_combo = ttk.Combobox(settings_frame, textvariable=self.day_var, 
-                                values=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], 
-                                state="readonly", width=18)
-        day_combo.grid(row=2, column=1, padx=10, pady=8)
+        ctk.CTkLabel(settings_frame, text="Day:", font=('Inter', 12)).grid(row=2, column=0, sticky='w', padx=15, pady=12)
+        self.day_combo = ctk.CTkComboBox(settings_frame, 
+                                        values=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                                        font=('Inter', 12), width=180)
+        self.day_combo.set(self.settings["day"])
+        self.day_combo.grid(row=2, column=1, padx=15, pady=12)
         
         # Session selection
-        tk.Label(settings_frame, text="Session:", fg='#ffffff', bg='#2a2a2a').grid(row=3, column=0, sticky='w', padx=10, pady=8)
-        self.session_var = tk.StringVar(value=self.settings["session"])
-        session_combo = ttk.Combobox(settings_frame, textvariable=self.session_var, 
-                                    values=list(self.sessions.keys()), 
-                                    state="readonly", width=18)
-        session_combo.grid(row=3, column=1, padx=10, pady=8)
+        ctk.CTkLabel(settings_frame, text="Session:", font=('Inter', 12)).grid(row=3, column=0, sticky='w', padx=15, pady=12)
+        self.session_combo = ctk.CTkComboBox(settings_frame, 
+                                            values=list(self.sessions.keys()),
+                                            font=('Inter', 12), width=180)
+        self.session_combo.set(self.settings["session"])
+        self.session_combo.grid(row=3, column=1, padx=15, pady=12)
         
         # Button frame
-        button_frame = tk.Frame(self.config_window, bg='#1a1a1a')
-        button_frame.pack(fill='x', padx=20, pady=15)
+        button_frame = ctk.CTkFrame(self.config_window, fg_color="transparent")
+        button_frame.pack(fill='x', padx=20, pady=20)
         
-        start_button = tk.Button(button_frame, text="Start Trading Timer", 
-                                font=('Arial', 12, 'bold'),
-                                bg='#ff6b35', fg='white', 
-                                relief='flat', padx=20, pady=10,
-                                command=self.start_main_app)
+        start_button = ctk.CTkButton(button_frame, text="Start Trading Timer", 
+                                    font=('Inter', 14, 'bold'),
+                                    fg_color='#ff6b35', hover_color='#e55a2b',
+                                    height=40, width=200,
+                                    command=self.start_main_app)
         start_button.pack()
+        
+    def exit_app(self):
+        """Exit the application"""
+        self.config_window.quit()
+        self.config_window.destroy()
         
     def start_main_app(self):
         """Save settings and start main countdown window"""
         # Update settings
-        self.settings["currency"] = self.currency_var.get()
-        self.settings["prop_firm"] = self.firm_var.get()
-        self.settings["day"] = self.day_var.get()
-        self.settings["session"] = self.session_var.get()
+        self.settings["currency"] = self.currency_combo.get()
+        self.settings["prop_firm"] = self.firm_combo.get()
+        self.settings["day"] = self.day_combo.get()
+        self.settings["session"] = self.session_combo.get()
         
         # Close config window and start main app
         self.config_window.destroy()
@@ -154,7 +168,7 @@ class MainCountdownWindow:
         self.news_api = NewsAPI()
         self.current_news_event = None
         self.api_error_message = None
-        self.main_window = tk.Tk()
+        self.main_window = ctk.CTk()
         self.setup_main_window()
         self.create_main_widgets()
         self.fetch_live_news()
@@ -163,91 +177,94 @@ class MainCountdownWindow:
     def setup_main_window(self):
         """Configure borderless main window"""
         self.main_window.title("Prop Fire Timer")
-        self.main_window.geometry("320x400+50+50")  # Top-left position
+        self.main_window.geometry("350x450+50+50")  # Top-left position
         self.main_window.resizable(False, False)
         self.main_window.attributes('-topmost', True)
         self.main_window.overrideredirect(True)  # Borderless
-        self.main_window.configure(bg='#1a1a1a')
-        
-        # Add border effect
-        border_frame = tk.Frame(self.main_window, bg='#ff6b35', bd=0)
-        border_frame.pack(fill='both', expand=True, padx=2, pady=2)
-        
-        self.content_frame = tk.Frame(border_frame, bg='#1a1a1a')
-        self.content_frame.pack(fill='both', expand=True, padx=1, pady=1)
         
     def create_main_widgets(self):
         """Create main countdown interface"""
-        # Header with settings button
-        header_frame = tk.Frame(self.content_frame, bg='#1a1a1a')
+        # Header with settings and exit buttons
+        header_frame = ctk.CTkFrame(self.main_window, fg_color="transparent")
         header_frame.pack(fill='x', padx=15, pady=10)
         
-        title_label = tk.Label(header_frame, text="🔥 PROP FIRE", 
-                              font=('Arial', 16, 'bold'), 
-                              fg='#ff6b35', bg='#1a1a1a')
+        title_label = ctk.CTkLabel(header_frame, text="🔥 PROP FIRE", 
+                                  font=('Inter', 16, 'bold'), 
+                                  text_color='#ff6b35')
         title_label.pack(side='left')
         
-        settings_button = tk.Button(header_frame, text="⚙️", 
-                                   font=('Arial', 12), 
-                                   bg='#2a2a2a', fg='#ffffff',
-                                   relief='flat', padx=8, pady=4,
-                                   command=self.open_settings)
+        button_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        button_frame.pack(side='right')
+        
+        exit_button = ctk.CTkButton(button_frame, text="❌", 
+                                   font=('Inter', 12), 
+                                   width=35, height=30,
+                                   command=self.exit_app)
+        exit_button.pack(side='right', padx=(0,5))
+        
+        settings_button = ctk.CTkButton(button_frame, text="⚙️", 
+                                       font=('Inter', 12), 
+                                       width=35, height=30,
+                                       command=self.open_settings)
         settings_button.pack(side='right')
         
         # Timer display
-        timer_frame = tk.Frame(self.content_frame, bg='#2a2a2a', relief='solid', bd=1)
+        timer_frame = ctk.CTkFrame(self.main_window)
         timer_frame.pack(fill='x', padx=15, pady=10)
         
-        self.timer_label = tk.Label(timer_frame, text="00:00:00", 
-                                   font=('Arial', 28, 'bold'), 
-                                   fg='#00ff00', bg='#2a2a2a')
+        self.timer_label = ctk.CTkLabel(timer_frame, text="00:00:00", 
+                                       font=('Inter', 28, 'bold'), 
+                                       text_color='#00ff00')
         self.timer_label.pack(pady=15)
         
         # Status
-        self.status_label = tk.Label(self.content_frame, text="Calculating...", 
-                                    font=('Arial', 10, 'bold'), 
-                                    fg='#ffaa00', bg='#1a1a1a',
-                                    wraplength=280, justify='center')
+        self.status_label = ctk.CTkLabel(self.main_window, text="Calculating...", 
+                                        font=('Inter', 12, 'bold'), 
+                                        text_color='#ffaa00',
+                                        wraplength=300)
         self.status_label.pack(pady=5)
         
         # Current settings info
-        info_frame = tk.Frame(self.content_frame, bg='#2a2a2a', relief='solid', bd=1)
+        info_frame = ctk.CTkFrame(self.main_window)
         info_frame.pack(fill='x', padx=15, pady=10)
         
         info_text = f"{self.settings['currency']} | {self.settings['prop_firm']} | {self.settings['day']} | {self.settings['session']}"
-        info_label = tk.Label(info_frame, text=info_text, 
-                             font=('Arial', 9), 
-                             fg='#ffffff', bg='#2a2a2a')
+        info_label = ctk.CTkLabel(info_frame, text=info_text, 
+                                 font=('Inter', 12))
         info_label.pack(pady=8)
         
         # Prop firm rules
         rules = self.prop_firms[self.settings['prop_firm']]
         rules_text = f"Rules: {rules['before']}min before | {rules['after']}min after"
-        rules_label = tk.Label(info_frame, text=rules_text, 
-                              font=('Arial', 8), 
-                              fg='#888888', bg='#2a2a2a')
+        rules_label = ctk.CTkLabel(info_frame, text=rules_text, 
+                                  font=('Inter', 10), 
+                                  text_color='#888888')
         rules_label.pack()
         
         # News event info
-        self.news_label = tk.Label(self.content_frame, text="No upcoming news", 
-                                  font=('Arial', 9), 
-                                  fg='#ffffff', bg='#1a1a1a', 
-                                  wraplength=280, justify='center')
+        self.news_label = ctk.CTkLabel(self.main_window, text="No upcoming news", 
+                                      font=('Inter', 12), 
+                                      wraplength=300)
         self.news_label.pack(pady=10)
         
         # Motivational quote
-        motivation_label = tk.Label(self.content_frame, 
-                                   text="💪 Stay consistent — small wins compound.", 
-                                   font=('Arial', 8, 'italic'), 
-                                   fg='#888888', bg='#1a1a1a',
-                                   wraplength=280, justify='center')
+        motivation_label = ctk.CTkLabel(self.main_window, 
+                                       text="💪 Stay consistent — small wins compound.", 
+                                       font=('Inter', 10), 
+                                       text_color='#888888',
+                                       wraplength=300)
         motivation_label.pack(pady=5)
         
         # Footer
-        footer_label = tk.Label(self.content_frame, text="Made by traderndumia", 
-                               font=('Arial', 8), 
-                               fg='#666666', bg='#1a1a1a')
+        footer_label = ctk.CTkLabel(self.main_window, text="Made by traderndumia", 
+                                   font=('Inter', 10), 
+                                   text_color='#666666')
         footer_label.pack(side='bottom', pady=5)
+        
+    def exit_app(self):
+        """Exit the application"""
+        self.main_window.quit()
+        self.main_window.destroy()
         
     def open_settings(self):
         """Close main window and open config"""
@@ -367,28 +384,28 @@ class MainCountdownWindow:
                 else:
                     timer_color = '#00ff00'
                     
-                self.timer_label.config(text=timer_text, fg=timer_color)
-                self.status_label.config(text=status_message)
+                self.timer_label.configure(text=timer_text, text_color=timer_color)
+                self.status_label.configure(text=status_message)
             else:
-                self.timer_label.config(text="TRADE NOW", fg='#00ff00')
-                self.status_label.config(text="Session Active - No Restrictions")
+                self.timer_label.configure(text="TRADE NOW", text_color='#00ff00')
+                self.status_label.configure(text="Session Active - No Restrictions")
                 
             # Update news information with API error handling
             if self.api_error_message:
-                self.news_label.config(text=f"⚠️ {self.api_error_message}\nUsing fallback mode", fg='#ffaa00')
+                self.news_label.configure(text=f"⚠️ {self.api_error_message}\nUsing fallback mode", text_color='#ffaa00')
             else:
                 next_event = self.get_next_news_event()
                 if next_event:
                     news_text = f"📰 {next_event['name']}\n{next_event['datetime'].strftime('%Y-%m-%d %H:%M UTC')}"
-                    self.news_label.config(text=news_text, fg='#ffffff')
+                    self.news_label.configure(text=news_text, text_color='#ffffff')
                 elif self.current_news_event is None:
-                    self.news_label.config(text="📰 No major news — preparing for session open", fg='#888888')
+                    self.news_label.configure(text="📰 No major news — preparing for session open", text_color='#888888')
                 else:
-                    self.news_label.config(text="📰 No high-impact news in session", fg='#888888')
+                    self.news_label.configure(text="📰 No high-impact news in session", text_color='#888888')
                 
         except Exception as e:
-            self.timer_label.config(text="ERROR", fg='#ff4444')
-            self.status_label.config(text="Calculation error")
+            self.timer_label.configure(text="ERROR", text_color='#ff4444')
+            self.status_label.configure(text="Calculation error")
             
         # Schedule next update
         self.main_window.after(1000, self.update_timer)

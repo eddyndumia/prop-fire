@@ -19,27 +19,26 @@ class NewsAPI:
             
             country = currency_map.get(currency_code, "US")
             
-            # Make API request
-            params = {
-                "country": country,
-                "importance": "high"
-            }
+            # Construct URL with parameters
+            url = f"{self.base_url}?importance=high&country={country}"
             
-            response = requests.get(self.base_url, headers=self.headers, params=params, timeout=10)
+            response = requests.get(url, headers=self.headers, timeout=10)
             
             if response.status_code == 200:
                 events = response.json()
                 return self._filter_events_by_day(events, target_day)
             else:
-                print(f"API Error: {response.status_code}")
-                return None
+                error_msg = f"API Error: {response.status_code} - {response.text}"
+                print(error_msg)
+                raise Exception(error_msg)
                 
         except requests.exceptions.RequestException as e:
-            print(f"Network error: {e}")
-            return None
+            error_msg = f"Network error: {str(e)}"
+            print(error_msg)
+            raise Exception(error_msg)
         except Exception as e:
-            print(f"Unexpected error: {e}")
-            return None
+            print(f"API error: {str(e)}")
+            raise e
             
     def _filter_events_by_day(self, events: List[Dict], target_day: str) -> Optional[Dict]:
         """Filter events by target day and return next relevant event"""
