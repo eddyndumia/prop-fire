@@ -21,13 +21,13 @@ class SplashScreen:
         
     def setup_splash(self):
         """Configure splash screen"""
-        self.splash.title("Prop Fire")
+        self.splash.title("PropFire")
         
         # Get screen dimensions for perfect centering
         screen_width = self.splash.winfo_screenwidth()
         screen_height = self.splash.winfo_screenheight()
-        window_width = 450
-        window_height = 320
+        window_width = 400
+        window_height = 250
         
         # Calculate center position
         x = (screen_width - window_width) // 2
@@ -37,30 +37,18 @@ class SplashScreen:
         self.splash.overrideredirect(True)
         self.splash.attributes('-topmost', True)
         
-        # Main container with padding
+        # Main container with responsive layout
         main_frame = ctk.CTkFrame(self.splash, fg_color="transparent")
-        main_frame.pack(fill='both', expand=True, padx=30, pady=30)
+        main_frame.pack(fill='both', expand=True)
         
-        # Title with better spacing
-        title_label = ctk.CTkLabel(main_frame, text="🔥 PROP FIRE", 
-                                  font=('Inter', 36, 'bold'), 
+        # Center the title perfectly
+        title_label = ctk.CTkLabel(main_frame, text="PropFire", 
+                                  font=('Inter', 42, 'bold'), 
                                   text_color='#ff6b35')
-        title_label.pack(expand=True)
+        title_label.place(relx=0.5, rely=0.5, anchor='center')
         
-        # Subtitle
-        subtitle_label = ctk.CTkLabel(main_frame, text="Professional Trading Timer", 
-                                     font=('Inter', 14), 
-                                     text_color='#cccccc')
-        subtitle_label.pack(pady=(0, 20))
-        
-        # Made by text
-        made_by_label = ctk.CTkLabel(main_frame, text="Made by traderndumia", 
-                                    font=('Inter', 12), 
-                                    text_color='#888888')
-        made_by_label.pack(side='bottom')
-        
-        # Auto-close after 3 seconds
-        self.after_job = self.splash.after(3000, self.close_splash)
+        # Auto-close after 2.5 seconds
+        self.after_job = self.splash.after(2500, self.close_splash)
         
     def close_splash(self):
         """Close splash and open main app"""
@@ -83,59 +71,69 @@ class ConfigWindow:
         self.sessions = sessions
         self.callback = callback
         self.config_window = ctk.CTk()
+        self.drag_data = {"x": 0, "y": 0}
         self.setup_config_window()
         self.create_config_widgets()
+        self.setup_drag()
         
     def setup_config_window(self):
         """Configure config window properties"""
-        self.config_window.title("Prop Fire - Configuration")
+        self.config_window.title("PropFire - Configuration")
         
-        # Get screen dimensions for centering
+        # Get screen dimensions for responsive sizing
         screen_width = self.config_window.winfo_screenwidth()
         screen_height = self.config_window.winfo_screenheight()
-        window_width = 480
-        window_height = 520
+        
+        # Dynamic window sizing based on screen
+        window_width = min(500, int(screen_width * 0.4))
+        window_height = min(700, int(screen_height * 0.8))
         
         # Calculate center position
         x = (screen_width - window_width) // 2
         y = (screen_height - window_height) // 2
         
         self.config_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        self.config_window.resizable(False, False)
-        self.config_window.overrideredirect(True)  # Borderless
+        self.config_window.resizable(True, True)
+        self.config_window.minsize(450, 600)
+        self.config_window.overrideredirect(True)
         self.config_window.attributes('-topmost', True)
         
     def create_config_widgets(self):
-        """Create configuration interface"""
+        """Create configuration interface with scrollable layout"""
         # Main container with border effect
         main_container = ctk.CTkFrame(self.config_window, corner_radius=12)
         main_container.pack(fill='both', expand=True, padx=8, pady=8)
         
-        # Header with title and exit button
-        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        header_frame.pack(fill='x', padx=25, pady=(20, 15))
+        # Create scrollable frame
+        self.scrollable_frame = ctk.CTkScrollableFrame(main_container, corner_radius=0)
+        self.scrollable_frame.pack(fill='both', expand=True, padx=5, pady=5)
         
-        title_label = ctk.CTkLabel(header_frame, text="🔥 PROP FIRE", 
-                                  font=('Inter', 20, 'bold'), 
+        # Header with title and exit button (fixed at top)
+        header_frame = ctk.CTkFrame(main_container, fg_color="transparent", height=60)
+        header_frame.pack(fill='x', padx=20, pady=(15, 0))
+        header_frame.pack_propagate(False)
+        
+        title_label = ctk.CTkLabel(header_frame, text="PropFire", 
+                                  font=('Inter', 22, 'bold'), 
                                   text_color='#ff6b35')
-        title_label.pack(side='left')
+        title_label.pack(side='left', pady=15)
         
         exit_button = ctk.CTkButton(header_frame, text="❌", 
                                    font=('Inter', 14), 
                                    width=36, height=36,
                                    corner_radius=18,
                                    command=self.exit_app)
-        exit_button.pack(side='right')
+        exit_button.pack(side='right', pady=12)
         
-        # Subtitle
-        subtitle_label = ctk.CTkLabel(main_container, text="Trading Configuration", 
-                                     font=('Inter', 14), 
+        # Subtitle in scrollable area
+        subtitle_label = ctk.CTkLabel(self.scrollable_frame, text="Trading Configuration", 
+                                     font=('Inter', 16, 'bold'), 
                                      text_color='#aaaaaa')
-        subtitle_label.pack(pady=(0, 25))
+        subtitle_label.pack(pady=(20, 30))
         
-        # Settings container with proper grid layout
-        settings_container = ctk.CTkFrame(main_container)
-        settings_container.pack(fill='x', padx=25, pady=(0, 25))
+        # Settings container with proper grid layout in scrollable area
+        settings_container = ctk.CTkFrame(self.scrollable_frame)
+        settings_container.pack(fill='x', padx=20, pady=(0, 30))
         
         # Configure grid weights for responsive layout
         settings_container.grid_columnconfigure(1, weight=1)
@@ -176,21 +174,58 @@ class ConfigWindow:
         self.session_combo.set(self.settings["session"])
         self.session_combo.grid(row=3, column=1, sticky='ew', padx=(10, 20), pady=15)
         
-        # Button container - ensures button is always visible
-        button_container = ctk.CTkFrame(main_container, fg_color="transparent")
-        button_container.pack(fill='x', padx=25, pady=(10, 25))
+        # Account size input
+        ctk.CTkLabel(settings_container, text="Account Size:", 
+                    font=('Inter', 13, 'bold')).grid(row=4, column=0, sticky='w', padx=20, pady=15)
+        self.account_entry = ctk.CTkEntry(settings_container, 
+                                         font=('Inter', 13), width=200, height=35,
+                                         placeholder_text="e.g., 10000")
+        self.account_entry.insert(0, str(self.settings.get("account_size", "10000")))
+        self.account_entry.grid(row=4, column=1, sticky='ew', padx=(10, 20), pady=15)
+        
+        # Risk percentage input
+        ctk.CTkLabel(settings_container, text="Risk %:", 
+                    font=('Inter', 13, 'bold')).grid(row=5, column=0, sticky='w', padx=20, pady=15)
+        self.risk_entry = ctk.CTkEntry(settings_container, 
+                                      font=('Inter', 13), width=200, height=35,
+                                      placeholder_text="e.g., 1.5")
+        self.risk_entry.insert(0, str(self.settings.get("risk_percent", "1.0")))
+        self.risk_entry.grid(row=5, column=1, sticky='ew', padx=(10, 20), pady=15)
+        
+        # Button container in scrollable area - always visible
+        button_container = ctk.CTkFrame(self.scrollable_frame, fg_color="transparent")
+        button_container.pack(fill='x', padx=20, pady=(20, 40))
         
         start_button = ctk.CTkButton(button_container, text="Start Trading Timer", 
-                                    font=('Inter', 15, 'bold'),
+                                    font=('Inter', 16, 'bold'),
                                     fg_color='#ff6b35', hover_color='#e55a2b',
-                                    height=45, width=250, corner_radius=8,
+                                    height=50, corner_radius=10,
                                     command=self.start_main_app)
-        start_button.pack(pady=10)
+        start_button.pack(pady=15, fill='x', padx=30)
+        
+        # Debug: Log button visibility
+        print(f"DEBUG: Submit button created and packed in scrollable frame")
         
     def exit_app(self):
         """Exit the application"""
         self.config_window.quit()
         self.config_window.destroy()
+        
+    def setup_drag(self):
+        """Setup window dragging functionality"""
+        self.config_window.bind("<Button-1>", self.start_drag)
+        self.config_window.bind("<B1-Motion>", self.do_drag)
+        
+    def start_drag(self, event):
+        """Start dragging the window"""
+        self.drag_data["x"] = event.x
+        self.drag_data["y"] = event.y
+        
+    def do_drag(self, event):
+        """Drag the window"""
+        x = self.config_window.winfo_x() + (event.x - self.drag_data["x"])
+        y = self.config_window.winfo_y() + (event.y - self.drag_data["y"])
+        self.config_window.geometry(f"+{x}+{y}")
         
     def start_main_app(self):
         """Save settings and start main countdown window"""
@@ -199,6 +234,14 @@ class ConfigWindow:
         self.settings["prop_firm"] = self.firm_combo.get()
         self.settings["day"] = self.day_combo.get()
         self.settings["session"] = self.session_combo.get()
+        
+        # Save account size and risk percentage
+        try:
+            self.settings["account_size"] = float(self.account_entry.get() or "10000")
+            self.settings["risk_percent"] = float(self.risk_entry.get() or "1.0")
+        except ValueError:
+            self.settings["account_size"] = 10000.0
+            self.settings["risk_percent"] = 1.0
         
         # Close config window and start main app
         self.config_window.destroy()
@@ -219,21 +262,38 @@ class MainCountdownWindow:
         self.current_news_event = None
         self.api_error_message = None
         self.after_job = None
+        self.drag_data = {"x": 0, "y": 0}
+        self.session_start_times = {
+            "London": "03:00",   # 8AM GMT = 3AM EST
+            "New York": "08:00", # 8AM EST
+            "Tokyo": "19:00",    # 8AM JST = 7PM EST (previous day)
+            "Sydney": "17:00"    # 8AM AEDT = 5PM EST (previous day)
+        }
         self.main_window = ctk.CTk()
         self.setup_main_window()
         self.create_main_widgets()
+        self.setup_drag()
         self.fetch_live_news()
         self.update_timer()
         
     def setup_main_window(self):
         """Configure borderless main window"""
-        self.main_window.title("Prop Fire Timer")
+        self.main_window.title("PropFire Timer")
         
-        # Improved sizing and positioning
-        window_width = 380
-        window_height = 520
-        self.main_window.geometry(f"{window_width}x{window_height}+50+50")
-        self.main_window.resizable(False, False)
+        # Dynamic sizing based on screen
+        screen_width = self.main_window.winfo_screenwidth()
+        screen_height = self.main_window.winfo_screenheight()
+        
+        window_width = min(400, int(screen_width * 0.3))
+        window_height = min(600, int(screen_height * 0.7))
+        
+        # Position on screen
+        x = 50
+        y = 50
+        
+        self.main_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        self.main_window.resizable(True, True)
+        self.main_window.minsize(350, 500)
         self.main_window.attributes('-topmost', True)
         self.main_window.overrideredirect(True)
         
@@ -243,30 +303,31 @@ class MainCountdownWindow:
         main_container = ctk.CTkFrame(self.main_window, corner_radius=12)
         main_container.pack(fill='both', expand=True, padx=8, pady=8)
         
-        # Header with title and control buttons
-        header_frame = ctk.CTkFrame(main_container, fg_color="transparent")
-        header_frame.pack(fill='x', padx=20, pady=(15, 10))
+        # Header with title and control buttons (fixed positioning)
+        header_frame = ctk.CTkFrame(main_container, fg_color="transparent", height=50)
+        header_frame.pack(fill='x', padx=15, pady=(10, 5))
+        header_frame.pack_propagate(False)
         
-        title_label = ctk.CTkLabel(header_frame, text="🔥 PROP FIRE", 
-                                  font=('Inter', 18, 'bold'), 
+        title_label = ctk.CTkLabel(header_frame, text="PropFire", 
+                                  font=('Inter', 20, 'bold'), 
                                   text_color='#ff6b35')
-        title_label.pack(side='left')
+        title_label.pack(side='left', pady=10)
         
-        # Control buttons container
+        # Control buttons container with consistent positioning
         controls_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        controls_frame.pack(side='right')
-        
-        exit_button = ctk.CTkButton(controls_frame, text="❌", 
-                                   font=('Inter', 14), 
-                                   width=36, height=36, corner_radius=18,
-                                   command=self.exit_app)
-        exit_button.pack(side='right', padx=(5, 0))
+        controls_frame.pack(side='right', pady=7)
         
         settings_button = ctk.CTkButton(controls_frame, text="⚙️", 
                                        font=('Inter', 14), 
                                        width=36, height=36, corner_radius=18,
                                        command=self.open_settings)
-        settings_button.pack(side='right')
+        settings_button.pack(side='right', padx=(0, 5))
+        
+        exit_button = ctk.CTkButton(controls_frame, text="❌", 
+                                   font=('Inter', 14), 
+                                   width=36, height=36, corner_radius=18,
+                                   command=self.exit_app)
+        exit_button.pack(side='right')
         
         # Timer display with enhanced styling
         timer_container = ctk.CTkFrame(main_container, corner_radius=10)
@@ -310,60 +371,90 @@ class MainCountdownWindow:
                                       wraplength=340)
         self.news_label.pack(pady=15)
         
+        # Risk calculation display
+        risk_container = ctk.CTkFrame(main_container, corner_radius=8)
+        risk_container.pack(fill='x', padx=20, pady=(0, 15))
+        
+        account_size = self.settings.get("account_size", 10000)
+        risk_percent = self.settings.get("risk_percent", 1.0)
+        risk_amount = (account_size * risk_percent) / 100
+        
+        risk_text = f"Account: ${account_size:,.0f} | Risk: {risk_percent}% (${risk_amount:,.2f})"
+        risk_label = ctk.CTkLabel(risk_container, text=risk_text, 
+                                 font=('Inter', 12, 'bold'))
+        risk_label.pack(pady=12)
+        
         # Motivational quote
         motivation_label = ctk.CTkLabel(main_container, 
-                                       text="💪 Stay consistent — small wins compound.", 
+                                       text="💪 Stay focused. Trust your plan.", 
                                        font=('Inter', 11, 'italic'), 
                                        text_color='#999999',
                                        wraplength=340)
-        motivation_label.pack(pady=(5, 15))
+        motivation_label.pack(pady=(5, 10))
         
-        # Footer
-        footer_label = ctk.CTkLabel(main_container, text="Made by traderndumia", 
+        # User credit
+        credit_label = ctk.CTkLabel(main_container, text="Made by traderndumia", 
                                    font=('Inter', 10), 
                                    text_color='#777777')
-        footer_label.pack(side='bottom', pady=(0, 15))
+        credit_label.pack(pady=(0, 15))
         
     def exit_app(self):
         """Exit the application"""
         try:
-            if self.after_job:
+            if hasattr(self, 'after_job') and self.after_job:
                 self.main_window.after_cancel(self.after_job)
             self.main_window.quit()
             self.main_window.destroy()
-        except:
-            pass
+        except Exception as e:
+            print(f"Exit error: {e}")
+        
+    def setup_drag(self):
+        """Setup window dragging functionality"""
+        self.main_window.bind("<Button-1>", self.start_drag)
+        self.main_window.bind("<B1-Motion>", self.do_drag)
+        
+    def start_drag(self, event):
+        """Start dragging the window"""
+        self.drag_data["x"] = event.x
+        self.drag_data["y"] = event.y
+        
+    def do_drag(self, event):
+        """Drag the window"""
+        x = self.main_window.winfo_x() + (event.x - self.drag_data["x"])
+        y = self.main_window.winfo_y() + (event.y - self.drag_data["y"])
+        self.main_window.geometry(f"+{x}+{y}")
         
     def open_settings(self):
         """Close main window and open config"""
         try:
-            if self.after_job:
+            if hasattr(self, 'after_job') and self.after_job:
                 self.main_window.after_cancel(self.after_job)
             self.main_window.destroy()
             self.config_callback()
-        except:
-            pass
+        except Exception as e:
+            print(f"Settings transition error: {e}")
         
     def fetch_live_news(self):
         """Fetch live news data from API in background thread"""
         def fetch_news():
             try:
+                print(f"DEBUG: Fetching news for {self.settings['currency']} in {self.settings['session']} session")
                 result = self.news_api.fetch_high_impact_news(
                     self.settings["currency"], 
-                    self.settings["day"]
+                    self.settings["session"]
                 )
                 if result:
                     self.current_news_event = result
                     self.api_error_message = None
-                    print(f"Found news event: {result['title']}")
+                    print(f"DEBUG: Successfully fetched news event: {result['title']} at {result['time']} EST")
                 else:
                     self.current_news_event = None
                     self.api_error_message = None
-                    print("No matching news events found")
+                    print(f"DEBUG: No news events found, will use session fallback")
             except Exception as e:
-                self.api_error_message = f"Network Error: {str(e)}"
+                self.api_error_message = f"API Error: {str(e)}"
                 self.current_news_event = None
-                print(f"News fetch error: {e}")
+                print(f"DEBUG: News fetch error: {e}")
                 
         # Run in background thread to avoid blocking UI
         thread = threading.Thread(target=fetch_news, daemon=True)
@@ -424,16 +515,20 @@ class MainCountdownWindow:
                 return self.get_next_session_start(), "Waiting for next session"
         else:
             # No news events, wait for session start
-            return self.get_next_session_start(), "Waiting for session to begin"
+            session_name = self.settings["session"]
+            return self.get_next_session_start(), f"No high-impact news. Countdown to {session_name} Session start."
             
     def get_next_session_start(self) -> datetime.datetime:
-        """Get the next session start time"""
+        """Get the next session start time with fallback support"""
         now = datetime.datetime.now()
-        session = self.sessions[self.settings["session"]]
+        session_name = self.settings["session"]
+        
+        # Use session start times for fallback
+        session_time = self.session_start_times.get(session_name, "08:00")
         
         # Try today first
         today_start = datetime.datetime.combine(now.date(), 
-                                               datetime.datetime.strptime(session["start"], "%H:%M").time())
+                                               datetime.datetime.strptime(session_time, "%H:%M").time())
         
         if now < today_start:
             return today_start
@@ -441,15 +536,18 @@ class MainCountdownWindow:
             # Next day
             tomorrow = now + datetime.timedelta(days=1)
             return datetime.datetime.combine(tomorrow.date(), 
-                                           datetime.datetime.strptime(session["start"], "%H:%M").time())
+                                           datetime.datetime.strptime(session_time, "%H:%M").time())
             
     def update_timer(self):
         """Update countdown timer and status"""
+        # Check if window still exists before proceeding
         try:
-            # Check if window still exists
-            if not self.main_window.winfo_exists():
+            if not hasattr(self, 'main_window') or not self.main_window.winfo_exists():
                 return
-                
+        except:
+            return
+            
+        try:
             next_trade_time, status_message = self.calculate_next_trade_time()
             now = datetime.datetime.now()
             
@@ -494,9 +592,10 @@ class MainCountdownWindow:
             
         # Schedule next update with proper cleanup
         try:
-            self.after_job = self.main_window.after(1000, self.update_timer)
-        except:
-            pass
+            if hasattr(self, 'main_window') and self.main_window.winfo_exists():
+                self.after_job = self.main_window.after(1000, self.update_timer)
+        except Exception as e:
+            print(f"Timer scheduling error: {e}")
         
     def show(self):
         """Display main countdown window"""
@@ -534,6 +633,8 @@ class PropFireApp:
             "prop_firm": "FTMO",
             "day": "Tuesday",
             "session": "London",
+            "account_size": 10000.0,
+            "risk_percent": 1.0,
             "dark_mode": True
         }
         
@@ -569,6 +670,14 @@ class PropFireApp:
             "Asia": {"start": "00:00", "end": "09:00"},
             "London": {"start": "08:00", "end": "17:00"},
             "New York": {"start": "13:00", "end": "22:00"}
+        }
+        
+        # Session start times for fallback
+        self.session_start_times = {
+            "London": "08:00",
+            "New York": "13:00",
+            "Tokyo": "00:00",
+            "Sydney": "22:00"
         }
         
         # Mock high-impact news events (would normally fetch from API)
