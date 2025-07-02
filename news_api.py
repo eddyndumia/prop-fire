@@ -54,12 +54,19 @@ class NewsAPI:
                         impact_text == "High" and 
                         date_text):
                         
-                        # Parse date (format: "dd-mm-yyyy HH:MM:SS")
-                        event_datetime = datetime.datetime.strptime(date_text, "%d-%m-%Y %H:%M:%S")
+                        # Parse date (format: "YYYY-MM-DD HH:MM:SS")
+                        try:
+                            event_datetime = datetime.datetime.strptime(date_text, "%Y-%m-%d %H:%M:%S")
+                        except ValueError:
+                            # Try alternative format if first fails
+                            try:
+                                event_datetime = datetime.datetime.strptime(date_text, "%d-%m-%Y %H:%M:%S")
+                            except ValueError:
+                                continue
                         
                         # Check if event is in future and on target day
                         if (event_datetime > now and 
-                            event_datetime.weekday() == target_weekday):
+                            event_datetime.strftime("%A") == target_day):
                             
                             relevant_events.append({
                                 "title": title_text,
@@ -85,12 +92,12 @@ class NewsAPI:
         except requests.exceptions.RequestException as e:
             error_msg = f"Network error: {str(e)}"
             print(error_msg)
-            raise Exception(error_msg)
+            return None
         except ET.ParseError as e:
             error_msg = f"XML parsing error: {str(e)}"
             print(error_msg)
-            raise Exception(error_msg)
+            return None
         except Exception as e:
             error_msg = f"Unexpected error: {str(e)}"
             print(error_msg)
-            raise Exception(error_msg)
+            return None

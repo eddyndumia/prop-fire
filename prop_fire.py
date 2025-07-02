@@ -16,6 +16,7 @@ class SplashScreen:
     def __init__(self, callback):
         self.callback = callback
         self.splash = ctk.CTk()
+        self.after_job = None
         self.setup_splash()
         
     def setup_splash(self):
@@ -59,12 +60,17 @@ class SplashScreen:
         made_by_label.pack(side='bottom')
         
         # Auto-close after 3 seconds
-        self.splash.after(3000, self.close_splash)
+        self.after_job = self.splash.after(3000, self.close_splash)
         
     def close_splash(self):
         """Close splash and open main app"""
-        self.splash.destroy()
-        self.callback()
+        try:
+            if self.after_job:
+                self.splash.after_cancel(self.after_job)
+            self.splash.destroy()
+            self.callback()
+        except:
+            pass
         
     def show(self):
         """Display splash screen"""
@@ -212,6 +218,7 @@ class MainCountdownWindow:
         self.news_api = NewsAPI()
         self.current_news_event = None
         self.api_error_message = None
+        self.after_job = None
         self.main_window = ctk.CTk()
         self.setup_main_window()
         self.create_main_widgets()
@@ -319,38 +326,56 @@ class MainCountdownWindow:
         
     def exit_app(self):
         """Exit the application"""
-        self.main_window.quit()
-        self.main_window.destroy()
+        try:
+            if self.after_job:
+                self.main_window.after_cancel(self.after_job)
+            self.main_window.quit()
+            self.main_window.destroy()
+        except:
+            pass
         
     def open_settings(self):
         """Close main window and open config"""
-        self.main_window.destroy()
-        self.config_callback()
+        try:
+            if self.after_job:
+                self.main_window.after_cancel(self.after_job)
+            self.main_window.destroy()
+            self.config_callback()
+        except:
+            pass
         
     def fetch_live_news(self):
         """Fetch live news data from API in background thread"""
         def fetch_news():
             try:
-                self.current_news_event = self.news_api.fetch_high_impact_news(
+                result = self.news_api.fetch_high_impact_news(
                     self.settings["currency"], 
                     self.settings["day"]
                 )
-                self.api_error_message = None
+                if result:
+                    self.current_news_event = result
+                    self.api_error_message = None
+                    print(f"Found news event: {result['title']}")
+                else:
+                    self.current_news_event = None
+                    self.api_error_message = None
+                    print("No matching news events found")
             except Exception as e:
-                self.api_error_message = f"API Error: {str(e)}"
+                self.api_error_message = f"Network Error: {str(e)}"
                 self.current_news_event = None
+                print(f"News fetch error: {e}")
                 
         # Run in background thread to avoid blocking UI
         thread = threading.Thread(target=fetch_news, daemon=True)
         thread.start()
         
     def get_next_news_event(self) -> Optional[Dict]:
-        """Find the next relevant news event from live API data"""
-        # Return live news event if available and within session
-        if self.current_news_event and self.is_in_session_time(self.current_news_event["time"]):
+        """Find the next relevant news event from live data"""
+        # Return live news event if available
+        if self.current_news_event:
             return {
                 "datetime": self.current_news_event["datetime"],
-                "name": self.current_news_event["event_name"],
+                "name": self.current_news_event["title"],
                 "currency": self.settings["currency"]
             }
         return None
@@ -421,6 +446,10 @@ class MainCountdownWindow:
     def update_timer(self):
         """Update countdown timer and status"""
         try:
+            # Check if window still exists
+            if not self.main_window.winfo_exists():
+                return
+                
             next_trade_time, status_message = self.calculate_next_trade_time()
             now = datetime.datetime.now()
             
@@ -446,25 +475,28 @@ class MainCountdownWindow:
                 self.timer_label.configure(text="TRADE NOW", text_color='#00ff00')
                 self.status_label.configure(text="Session Active - No Restrictions")
                 
-            # Update news information with API error handling
-            if self.api_error_message:
-                self.news_label.configure(text=f"⚠️ {self.api_error_message}\nUsing fallback mode", text_color='#ffaa00')
+            # Update news information
+            if self.current_news_event:
+                news_text = f"📰 {self.current_news_event['title']}\n{self.current_news_event['datetime'].strftime('%Y-%m-%d %H:%M UTC')}"
+                self.news_label.configure(text=news_text, text_color='#ffffff')
+            elif self.api_error_message:
+                self.news_label.configure(text=f"⚠️ Network Error\nUsing session timing", text_color='#ffaa00')
             else:
-                next_event = self.get_next_news_event()
-                if next_event:
-                    news_text = f"📰 {next_event['name']}\n{next_event['datetime'].strftime('%Y-%m-%d %H:%M UTC')}"
-                    self.news_label.configure(text=news_text, text_color='#ffffff')
-                elif self.current_news_event is None:
-                    self.news_label.configure(text="📰 No major news — preparing for session open", text_color='#888888')
-                else:
-                    self.news_label.configure(text="📰 No high-impact news in session", text_color='#888888')
+                self.news_label.configure(text="📰 No major news — preparing for session open", text_color='#888888')
                 
         except Exception as e:
-            self.timer_label.configure(text="ERROR", text_color='#ff4444')
-            self.status_label.configure(text="Calculation error")
+            print(f"Timer update error: {e}")
+            try:
+                self.timer_label.configure(text="ERROR", text_color='#ff4444')
+                self.status_label.configure(text="Calculation error")
+            except:
+                pass
             
-        # Schedule next update
-        self.main_window.after(1000, self.update_timer)
+        # Schedule next update with proper cleanup
+        try:
+            self.after_job = self.main_window.after(1000, self.update_timer)
+        except:
+            pass
         
     def show(self):
         """Display main countdown window"""
