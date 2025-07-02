@@ -9,6 +9,7 @@ import time
 import pytz
 import webbrowser
 from news_api import NewsAPI
+from trading_journal import TradingJournalWindow
 
 # Set customtkinter appearance
 ctk.set_appearance_mode("dark")
@@ -392,6 +393,14 @@ class MainCountdownWindow:
         
         # Prop firm rules in right column
         self.create_prop_firm_rules_panel(right_column)
+        
+        # Trading Journal button
+        journal_button = ctk.CTkButton(right_column, text="📊 Trading Journal", 
+                                      font=('Inter', 12, 'bold'), 
+                                      width=140, height=35,
+                                      fg_color='#4A90E2', hover_color='#357ABD',
+                                      command=self.open_trading_journal)
+        journal_button.pack(pady=(10, 5))
         
         # Sticky footer spanning both columns - BOTTOM MOST
         footer_frame = ctk.CTkFrame(main_container, fg_color='transparent')
@@ -803,6 +812,11 @@ class MainCountdownWindow:
                                   text_color='#cccccc',
                                   justify='center')
         rules_label.pack(padx=5, pady=(0, 10))
+    
+    def open_trading_journal(self):
+        """Open Trading Journal window"""
+        journal = TradingJournalWindow()
+        journal.show()
     
     def open_coffee_link(self):
         """Open Buy Me Coffee link in browser"""
