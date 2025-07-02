@@ -115,9 +115,66 @@ class NewsAPI:
             return None
             
     def get_high_impact_news(self, currency: str, session: str) -> List[Dict]:
-        """Wrapper for compatibility with existing code"""
-        event = self.fetch_high_impact_events(currency, session)
-        return [event] if event else []
+        """Get all high-impact events for the session"""
+        try:
+            cache_key = f"{currency}-{datetime.now().strftime('%Y-%m-%d')}"
+            
+            if cache_key in self.cache:
+                cache_time, cached_data = self.cache[cache_key]
+                if (time.time() - cache_time) < self.cache_ttl:
+                    return cached_data
+            
+            response = requests.get(self.base_url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            matching_events = []
+            now = datetime.now()
+            
+            for event in data:
+                try:
+                    if event.get('country', '').upper() != currency.upper():
+                        continue
+                    if event.get('impact', '') != 'High':
+                        continue
+                    
+                    event_date_str = event.get('date', '')
+                    if not event_date_str:
+                        continue
+                    
+                    if 'T' in event_date_str:
+                        date_part = event_date_str.split('T')[0]
+                        time_part = event_date_str.split('T')[1].split('-')[0].split('+')[0]
+                        event_date = datetime.strptime(date_part, '%Y-%m-%d')
+                        if ':' in time_part:
+                            hour, minute = map(int, time_part.split(':')[:2])
+                            event_date = event_date.replace(hour=hour, minute=minute)
+                    else:
+                        event_date = datetime.strptime(event_date_str, '%Y-%m-%d')
+                        event_date = event_date.replace(hour=12, minute=0)
+                    
+                    if event_date <= now:
+                        continue
+                    
+                    event_data = {
+                        "title": event.get('title', 'Economic Event'),
+                        "datetime": event_date,
+                        "currency": currency.upper(),
+                        "time": event_date.strftime("%H:%M"),
+                        "day_name": event_date.strftime("%A"),
+                        "impact": "High"
+                    }
+                    matching_events.append(event_data)
+                    
+                except Exception:
+                    continue
+            
+            matching_events.sort(key=lambda x: x['datetime'])
+            self.cache[cache_key] = (time.time(), matching_events)
+            return matching_events
+            
+        except Exception:
+            return []
     
     def fetch_high_impact_news(self, currency_code: str, session: str) -> Optional[Dict]:
         """Main method - delegates to ecocal Calendar"""
