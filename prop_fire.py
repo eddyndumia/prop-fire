@@ -9,7 +9,8 @@ import time
 import pytz
 import webbrowser
 from news_api import NewsAPI
-from trading_journal import TradingJournalWindow
+from enhanced_journal import EnhancedJournalWindow, AccountSetupDialog
+from account_manager import AccountService
 
 # Set customtkinter appearance
 ctk.set_appearance_mode("dark")
@@ -150,50 +151,27 @@ class ConfigWindow:
         self.currency_combo.set(self.settings["currency"])
         self.currency_combo.grid(row=0, column=1, sticky='ew', padx=(10, 20), pady=15)
         
-        # Prop firm selection
-        ctk.CTkLabel(settings_container, text="Prop Firm:", 
-                    font=('Inter', 13, 'bold')).grid(row=1, column=0, sticky='w', padx=20, pady=15)
-        self.firm_combo = ctk.CTkComboBox(settings_container, 
-                                         values=list(self.prop_firms.keys()),
-                                         font=('Inter', 13), width=200, height=35)
-        self.firm_combo.set(self.settings["prop_firm"])
-        self.firm_combo.grid(row=1, column=1, sticky='ew', padx=(10, 20), pady=15)
+
         
         # Day selection
         ctk.CTkLabel(settings_container, text="Trading Day:", 
-                    font=('Inter', 13, 'bold')).grid(row=2, column=0, sticky='w', padx=20, pady=15)
+                    font=('Inter', 13, 'bold')).grid(row=1, column=0, sticky='w', padx=20, pady=15)
         self.day_combo = ctk.CTkComboBox(settings_container, 
                                         values=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
                                         font=('Inter', 13), width=200, height=35)
         self.day_combo.set(self.settings["day"])
-        self.day_combo.grid(row=2, column=1, sticky='ew', padx=(10, 20), pady=15)
+        self.day_combo.grid(row=1, column=1, sticky='ew', padx=(10, 20), pady=15)
         
         # Session selection
         ctk.CTkLabel(settings_container, text="Session:", 
-                    font=('Inter', 13, 'bold')).grid(row=3, column=0, sticky='w', padx=20, pady=15)
+                    font=('Inter', 13, 'bold')).grid(row=2, column=0, sticky='w', padx=20, pady=15)
         self.session_combo = ctk.CTkComboBox(settings_container, 
                                             values=list(self.sessions.keys()),
                                             font=('Inter', 13), width=200, height=35)
         self.session_combo.set(self.settings["session"])
-        self.session_combo.grid(row=3, column=1, sticky='ew', padx=(10, 20), pady=15)
+        self.session_combo.grid(row=2, column=1, sticky='ew', padx=(10, 20), pady=15)
         
-        # Account size input
-        ctk.CTkLabel(settings_container, text="Account Size:", 
-                    font=('Inter', 13, 'bold')).grid(row=4, column=0, sticky='w', padx=20, pady=15)
-        self.account_entry = ctk.CTkEntry(settings_container, 
-                                         font=('Inter', 13), width=200, height=35,
-                                         placeholder_text="e.g., 10000")
-        self.account_entry.insert(0, str(self.settings.get("account_size", "10000")))
-        self.account_entry.grid(row=4, column=1, sticky='ew', padx=(10, 20), pady=15)
-        
-        # Risk percentage input
-        ctk.CTkLabel(settings_container, text="Risk %:", 
-                    font=('Inter', 13, 'bold')).grid(row=5, column=0, sticky='w', padx=20, pady=15)
-        self.risk_entry = ctk.CTkEntry(settings_container, 
-                                      font=('Inter', 13), width=200, height=35,
-                                      placeholder_text="e.g., 1.5")
-        self.risk_entry.insert(0, str(self.settings.get("risk_percent", "1.0")))
-        self.risk_entry.grid(row=5, column=1, sticky='ew', padx=(10, 20), pady=15)
+
         
         # Button container in scrollable area - always visible
         button_container = ctk.CTkFrame(self.scrollable_frame, fg_color="transparent")
@@ -237,17 +215,8 @@ class ConfigWindow:
         """Save settings and start main countdown window"""
         # Update settings
         self.settings["currency"] = self.currency_combo.get()
-        self.settings["prop_firm"] = self.firm_combo.get()
         self.settings["day"] = self.day_combo.get()
         self.settings["session"] = self.session_combo.get()
-        
-        # Save account size and risk percentage
-        try:
-            self.settings["account_size"] = float(self.account_entry.get() or "10000")
-            self.settings["risk_percent"] = float(self.risk_entry.get() or "1.0")
-        except ValueError:
-            self.settings["account_size"] = 10000.0
-            self.settings["risk_percent"] = 1.0
         
         # Close config window and start main app with news loading
         self.config_window.destroy()
@@ -391,8 +360,17 @@ class MainCountdownWindow:
                                       command=self.refresh_news)
         refresh_button.pack(pady=(15, 10))
         
-        # Prop firm rules in right column
-        self.create_prop_firm_rules_panel(right_column)
+        # Account & Equity section
+        self.account_service = AccountService()
+        self.create_equity_panel(right_column)
+        
+        # Control buttons
+        account_btn = ctk.CTkButton(right_column, text="💰 Set Account Size", 
+                                   font=('Inter', 12, 'bold'), 
+                                   width=140, height=35,
+                                   fg_color='#ff6b35', hover_color='#e55a2b',
+                                   command=self.open_account_setup)
+        account_btn.pack(pady=(10, 5))
         
         # Trading Journal button
         journal_button = ctk.CTkButton(right_column, text="📊 Trading Journal", 
@@ -400,7 +378,7 @@ class MainCountdownWindow:
                                       width=140, height=35,
                                       fg_color='#4A90E2', hover_color='#357ABD',
                                       command=self.open_trading_journal)
-        journal_button.pack(pady=(10, 5))
+        journal_button.pack(pady=5)
         
         # Sticky footer spanning both columns - BOTTOM MOST
         footer_frame = ctk.CTkFrame(main_container, fg_color='transparent')
@@ -788,35 +766,53 @@ class MainCountdownWindow:
         except:
             print(f"ERROR: {message}")
         
-    def create_prop_firm_rules_panel(self, parent):
-        """Create compact prop firm rules panel"""
-        firm = self.settings['prop_firm']
-        firm_data = self.prop_firms.get(firm, self.prop_firms['FTMO'])
+    def create_equity_panel(self, parent):
+        """Create equity curve display panel"""
+        equity_container = ctk.CTkFrame(parent, corner_radius=8)
+        equity_container.pack(fill='both', expand=True, padx=5, pady=5)
         
-        rules_container = ctk.CTkFrame(parent, corner_radius=8)
-        rules_container.pack(fill='both', expand=True, padx=5, pady=5)
+        # Equity header
+        equity_title = ctk.CTkLabel(equity_container, text="Account Equity", 
+                                   font=('Inter', 14, 'bold'), 
+                                   text_color='#ff6b35')
+        equity_title.pack(pady=(10, 5))
         
-        # Compact rules header
-        rules_title = ctk.CTkLabel(rules_container, text=f"{firm} Rules", 
-                                  font=('Inter', 12, 'bold'), 
-                                  text_color='#ff6b35')
-        rules_title.pack(pady=(10, 5))
+        # Current equity display
+        current_equity = self.account_service.get_current_equity()
+        starting_balance = self.account_service.repository.get_starting_balance() or 10000.0
         
-        # Compact rules content
-        rules_text = f"News Window:\n{firm_data.get('before', 0)} + {firm_data.get('after', 0)} min\n\n"
-        rules_text += f"Max Daily: {firm_data.get('max_daily_loss', firm_data.get('max_daily_drawdown', 'N/A'))}%\n"
-        rules_text += f"Max Overall: {firm_data.get('max_overall_loss', firm_data.get('max_overall_drawdown', 'N/A'))}%"
+        equity_text = f"Starting: ${starting_balance:,.2f}\n"
+        equity_text += f"Current: ${current_equity:,.2f}\n"
+        equity_text += f"P&L: ${current_equity - starting_balance:+,.2f}"
         
-        rules_label = ctk.CTkLabel(rules_container, text=rules_text, 
-                                  font=('Inter', 16), 
-                                  text_color='#cccccc',
-                                  justify='center')
-        rules_label.pack(padx=5, pady=(0, 10))
+        color = '#00FF00' if current_equity >= starting_balance else '#FF4444'
+        
+        self.equity_label = ctk.CTkLabel(equity_container, text=equity_text, 
+                                        font=('Inter', 12), 
+                                        text_color=color,
+                                        justify='center')
+        self.equity_label.pack(padx=5, pady=(0, 10))
+    
+    def open_account_setup(self):
+        """Open account setup dialog"""
+        AccountSetupDialog(self.account_service, self.refresh_equity_display)
     
     def open_trading_journal(self):
-        """Open Trading Journal window"""
-        journal = TradingJournalWindow()
+        """Open Enhanced Trading Journal window"""
+        journal = EnhancedJournalWindow()
         journal.show()
+    
+    def refresh_equity_display(self):
+        """Refresh equity display after account changes"""
+        current_equity = self.account_service.get_current_equity()
+        starting_balance = self.account_service.repository.get_starting_balance() or 10000.0
+        
+        equity_text = f"Starting: ${starting_balance:,.2f}\n"
+        equity_text += f"Current: ${current_equity:,.2f}\n"
+        equity_text += f"P&L: ${current_equity - starting_balance:+,.2f}"
+        
+        color = '#00FF00' if current_equity >= starting_balance else '#FF4444'
+        self.equity_label.configure(text=equity_text, text_color=color)
     
     def open_coffee_link(self):
         """Open Buy Me Coffee link in browser"""
@@ -855,11 +851,8 @@ class PropFireApp:
         self.settings_file = "propfire_settings.json"
         default_settings = {
             "currency": "USD",
-            "prop_firm": "FTMO",
             "day": "Tuesday",
             "session": "London",
-            "account_size": 10000.0,
-            "risk_percent": 1.0,
             "dark_mode": True
         }
         

@@ -1,144 +1,170 @@
-# 🔥 Prop Fire - Trading Timer & News Tracker
+# PropFire
 
-A live countdown timer application designed for prop firm traders to avoid trading during restricted news windows.
+A professional trading timer and journal application designed for forex traders who demand precision in news event timing and comprehensive trade tracking. PropFire eliminates the guesswork in high-impact news trading by providing accurate EST-based countdown timers and maintains detailed trading records through an integrated journal system.
 
-## What Prop Fire Does
+## Overview
 
-Prop Fire helps prop firm traders by:
-- **Displaying countdown timers** until the next safe trading opportunity
-- **Tracking high-impact news events** that affect your chosen currency pairs
-- **Applying prop firm-specific rules** (e.g., FTMO's 2-minute restriction before/after red news)
-- **Showing session status** for different trading sessions (Asia, London, New York)
-- **Staying on top** of your screen as a floating overlay for constant visibility
+PropFire addresses the critical challenge faced by forex traders: timing market entries around high-impact economic news releases. The application provides real-time countdown timers for selected trading days, comprehensive trade journaling with P&L tracking, and equity curve visualization. Built with a focus on reliability and professional-grade functionality, PropFire serves as an essential tool for systematic trading operations.
 
-## Features
+## Key Features
 
-### Core Functionality
-- ⏰ **Live Countdown Timer** - Shows time until next trade opportunity
-- 📰 **News Event Tracking** - Displays upcoming high-impact news
-- 🏢 **Prop Firm Rules** - Supports FTMO, MyForexFunds, The5ers, FundedNext
-- 🌍 **Multi-Session Support** - Asia, London, New York trading sessions
-- 💱 **Currency Pairs** - USD, EUR, GBP, JPY, AUD, CAD
+### Economic Calendar & Timing
+- Accurate EST-based countdown timers for high-impact news events
+- Configurable trading sessions (London, New York, Asia)
+- Day-specific event filtering with manual news refresh
+- Professional news table with time, currency, event, and impact columns
+
+### Account Management & Equity Tracking
+- Configurable starting balance with automatic equity curve generation
+- Real-time P&L calculation and display
+- Account reset functionality with data preservation options
+- Visual equity progression tracking
+
+### Trading Journal
+- Calendar-based daily P&L entry system
+- Chart image attachments for trade setups (PNG/JPEG support)
+- Comprehensive trade details: entry price, stop-loss, take-profit
+- Automatic risk/reward ratio calculations
+- Monthly P&L aggregation and visualization
 
 ### User Interface
-- 🎨 **Modern Dark Theme** - Easy on the eyes during long trading sessions
-- 📌 **Always On Top** - Stays visible while you work on other applications
-- 💾 **Persistent Settings** - Remembers your preferences between sessions
-- 📱 **Compact Design** - Minimal screen real estate usage
+- Dark-themed, responsive design optimized for trading environments
+- Resizable windows with dynamic content adaptation
+- Professional typography using Inter font family
+- Intuitive navigation with topmost window management
 
-## How to Run
+## Architecture & Technologies
+
+### Design Patterns
+PropFire implements a clean MVC architecture with clear separation of concerns:
+- **Models**: Data structures for trades, account information, and news events
+- **Views**: CustomTkinter-based UI components with responsive layouts
+- **Controllers**: Business logic handlers and service layer abstractions
+
+### Core Technologies
+- **UI Framework**: CustomTkinter 5.2+ for modern, native-feeling interfaces
+- **Database**: SQLite with direct SQL for optimal performance
+- **Timezone Handling**: pytz for accurate EST conversions
+- **Image Processing**: Pillow for chart image management
+- **HTTP Requests**: requests library for news API integration
+
+### Persistence Layer
+- SQLite databases for trade entries and account data
+- JSON configuration files for user preferences
+- Organized image storage with automatic file management
+- 12-hour news caching with timestamp validation
+
+### Dependency Injection
+Services are injected through constructor parameters, enabling:
+- Clean separation between data access and business logic
+- Simplified unit testing with mock implementations
+- Flexible configuration management
+
+## Installation & Setup
 
 ### Prerequisites
-- Python 3.7 or higher
-- tkinter (usually included with Python)
+- Python 3.8 or higher
+- Windows, macOS, or Linux operating system
+- Minimum 4GB RAM, 100MB disk space
 
-### Installation & Usage
-1. **Clone or download** the project files
-2. **Navigate** to the project directory
-3. **Run the application**:
-   ```bash
-   python prop_fire.py
-   ```
+### Installation Steps
 
-### First Time Setup
-1. Select your **currency pair** (e.g., USD, EUR)
-2. Choose your **prop firm** (FTMO, MyForexFunds, etc.)
-3. Pick your **trading day** (Monday-Friday)
-4. Select your **preferred session** (Asia, London, New York)
-
-The application will automatically save your settings for future use.
-
-## How the Timer Logic Works
-
-### News Event Detection
-1. **Fetches news events** for your selected currency and trading day
-2. **Filters high-impact events** that fall within your chosen session
-3. **Identifies the next relevant event** that could affect trading
-
-### Prop Firm Rule Application
-Each prop firm has different restriction windows:
-- **FTMO**: 2 minutes before/after high-impact news
-- **MyForexFunds**: 5 minutes before/after high-impact news  
-- **The5ers**: 3 minutes before/after high-impact news
-- **FundedNext**: 2 minutes before, 3 minutes after high-impact news
-
-### Timer Calculation
-The app calculates your next trading opportunity by:
-
-1. **If no news during session**: Countdown to session start
-2. **If news exists**:
-   - **Before restriction window**: Shows time until trading must stop
-   - **During restriction window**: Shows time until trading can resume
-   - **After restriction window**: Shows "TRADE NOW" or next restriction
-
-### Visual Indicators
-- 🟢 **Green Timer**: Safe to trade (>15 minutes until restriction)
-- 🟡 **Yellow Timer**: Caution (5-15 minutes until restriction)  
-- 🔴 **Red Timer**: Danger zone (<5 minutes until restriction)
-
-## File Structure
-
-```
-Propfire/
-├── prop_fire.py           # Main application
-├── README.md             # This documentation
-└── propfire_settings.json # Auto-generated settings file
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/propfire.git
+cd propfire
 ```
 
-## Customization
-
-### Adding New Prop Firms
-Edit the `prop_firms` dictionary in `prop_fire.py`:
-```python
-self.prop_firms = {
-    "YourFirm": {"before": 3, "after": 2},  # 3 min before, 2 min after
-    # ... existing firms
-}
+2. Create and activate virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### Modifying Trading Sessions
-Update the `sessions` dictionary with your preferred UTC times:
-```python
-self.sessions = {
-    "YourSession": {"start": "09:00", "end": "18:00"},
-    # ... existing sessions
-}
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
 ```
 
-## Data Sources
+4. Run the application:
+```bash
+python prop_fire.py
+```
 
-### Live Economic Calendar API
-Prop Fire now integrates with **API Ninjas Economic Calendar** for real-time high-impact news:
-- **Endpoint**: `https://api.api-ninjas.com/v1/economiccalendar`
-- **Filters**: High-impact events for selected currency and trading day
-- **Fallback**: Graceful degradation when API is unavailable
-- **Error Handling**: Network issues, rate limits, and invalid responses
+### First-Time Setup
+1. Configure your preferred currency, trading day, and session
+2. Set your starting account balance via "Set Account Size"
+3. Begin logging trades through the Trading Journal
 
-### API Features
-- ✅ **Live Data**: Real economic events from API Ninjas
-- ✅ **Currency Filtering**: USD, EUR, GBP, JPY, AUD, CAD
-- ✅ **Impact Level**: High-impact events only
-- ✅ **Session Filtering**: Events within selected trading sessions
-- ✅ **Error Recovery**: Falls back to session-based timing when API fails
+## Usage
 
-## Troubleshooting
+### Account Configuration
+Access account settings through the "Set Account Size" button. This establishes your starting balance and initializes the equity tracking system. Changing the account size will reset all existing trade data.
 
-### Common Issues
-- **Timer shows "ERROR"**: Check your system time and date settings
-- **Window not staying on top**: Some window managers may override the topmost setting
-- **Settings not saving**: Ensure the application has write permissions in its directory
+### Trading Journal Access
+Click "Trading Journal" to open the calendar-based entry system. Each day cell displays the date and daily P&L. Click any day to enter trade details including entry/exit prices, stop-loss, take-profit levels, and attach chart screenshots.
 
-### Performance
-- The application updates every second for accurate countdown timing
-- Memory usage is minimal (~10-20MB)
-- CPU usage is negligible during normal operation
+### News Event Monitoring
+The main dashboard displays high-impact news events for your selected trading day. Use "Refresh News" to manually update the event list. The system filters events based on your configured day preference, ignoring other days' events.
 
-## Motivation
+### Equity Curve Monitoring
+The right panel displays real-time account equity, starting balance, and cumulative P&L. The display updates automatically as journal entries are added or modified.
 
-*"Trade with discipline — consistency builds equity."*
+## Development & Contribution
 
-Prop Fire was built to help traders maintain discipline by providing clear visual cues about when it's safe to trade, helping you avoid costly mistakes during high-impact news events.
+### Code Style
+- Follow PEP 8 conventions with 4-space indentation
+- Use type hints for all function parameters and return values
+- Maintain comprehensive docstrings for all public methods
+- Keep line length under 100 characters
+
+### Testing Requirements
+Run the test suite before submitting contributions:
+```bash
+python -m pytest tests/ -v
+```
+
+### Branch Strategy
+- `main`: Production-ready code
+- `develop`: Integration branch for new features
+- `feature/*`: Individual feature development
+- `hotfix/*`: Critical bug fixes
+
+### Contribution Process
+1. Fork the repository and create a feature branch
+2. Implement changes with appropriate test coverage
+3. Ensure all tests pass and code follows style guidelines
+4. Submit a pull request with detailed description of changes
+
+## Roadmap & Future Enhancements
+
+### Planned Features
+- **Session Overlap Alerts**: Visual indicators for overlapping trading sessions
+- **API Redundancy**: Multiple news source integration for reliability
+- **Export Functionality**: CSV/PDF export for trade records and equity curves
+- **Advanced Analytics**: Win rate, average R/R, and performance metrics
+- **Mobile Companion**: Read-only mobile app for trade monitoring
+
+### Performance Optimizations
+- Lazy loading for large datasets
+- Background threading for API calls
+- Optimized database queries with proper indexing
+- Memory usage optimization for extended runtime
+
+## License & Acknowledgments
+
+### License
+This project is licensed under the MIT License. See LICENSE file for details.
+
+### Third-Party Libraries
+- CustomTkinter: Modern UI framework for Python
+- Pillow: Python Imaging Library for image processing
+- pytz: Timezone calculations and conversions
+- requests: HTTP library for API integration
+
+### Acknowledgments
+PropFire was developed with insights from professional forex traders and incorporates best practices from commercial trading platforms. Special recognition to the open-source community for providing the foundational libraries that make this project possible.
 
 ---
 
-**Disclaimer**: This tool is for educational and informational purposes. Always verify news times and prop firm rules independently. Trading involves risk.
+**Disclaimer**: PropFire is a tool for trade timing and record-keeping. It does not provide trading signals or investment advice. Users are responsible for their own trading decisions and risk management.
